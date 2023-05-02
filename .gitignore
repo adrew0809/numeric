@@ -1,0 +1,6 @@
+.stack-work/
+*~
+*.swp
+*.lock
+dist-newstyle/
+numeric.cabal
