@@ -1,53 +1,37 @@
 module Test.QuickCheck.Rational (
   chooseExclusiveRational,
   chooseRational,
-  nonZeroRational,
-  positiveRational,
-  rational,
-  rationalInterval,
+  Interval(..),
   ) where
 
 import Test.QuickCheck
-import Data.Ratio
 
-rational :: Gen Rational
-rational = do d <- arbitrary
-              n <- scale square arbitrary
-              return $ n % (getNonZero d)
+newtype Interval a = Interval (a,a)
+                     deriving Show
 
-nonZeroRational :: Gen Rational
-nonZeroRational = do d <- arbitrary
-                     n <- scale square arbitrary
-                     return $ (getNonZero n) % (getNonZero d)
-
-positiveRational :: Gen Rational
-positiveRational = do d <- arbitrary
-                      n <- scale square arbitrary
-                      return $ (getPositive n) % (getPositive d)
-
-rationalInterval :: Gen (Rational,Rational)
-rationalInterval = do a <- rational
-                      d <- positiveRational
-                      return (a,(a + d))
+instance (Arbitrary a, Ord a) => Arbitrary (Interval a) where
+  arbitrary = do a <- arbitrary
+                 b <- arbitrary
+                 return $ Interval $ if a < b
+                                     then (a,b)
+                                     else (b,a)
 
 chooseRational :: (Rational,Rational) -> Gen Rational
 chooseRational (a,b) = do s <- getSize
-                          let d = denominator dist
-                              n = numerator dist
-                              s' = fromIntegral $ s + 1
-                              dist = b - a
-                          m <- chooseInteger(0, s')
-                          return $ a + ((m * n) % (s' * d))
+                          x <- chooseInt (-s,s)
+                          let x' = fromIntegral x
+                              s' = fromIntegral s
+                          return $ mapOnto x' (-s',s') (a,b)
 
 chooseExclusiveRational :: (Rational,Rational) -> Gen Rational
 chooseExclusiveRational (a,b) = do s <- getSize
-                                   let d = denominator dist
-                                       n = numerator dist
-                                       s' = fromIntegral $ s + 2
-                                       dist = b - a
-                                   m <- chooseInteger(1, s' - 1)
-                                   return $ a + ((m * n) % (s' * d))
+                                   x <- chooseInt ((-s) + 1,s - 1)
+                                   let x' = fromIntegral x
+                                       s' = fromIntegral s
+                                   return $ mapOnto x' (-s',s') (a,b)
 
-square :: Int -> Int
-square = (^(2::Int))
-
+mapOnto :: (Eq a, Fractional a) => a -> (a,a) -> (a,a) -> a
+mapOnto x (a,b) (a',b') = if s == 0
+                          then a
+                          else (b' - a')*x/(2*s) + (a' + b')/2
+                where s = b - a

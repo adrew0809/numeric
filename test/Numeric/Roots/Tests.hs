@@ -15,22 +15,20 @@ import Test.QuickCheck
 import Test.QuickCheck.Rational
 import Control.Monad.State (evalState,execState,replicateM)
 
-prop_bisectContainsRoot :: Fun Rational Rational -> Property
-prop_bisectContainsRoot (Fun _ f) =
-  forAll rationalInterval $ \(a,b) ->
+prop_bisectContainsRoot :: Fun Rational Rational -> (Rational,Rational) ->
+                           Property
+prop_bisectContainsRoot (Fun _ f) (a,b) =
   let (a',b') = execState (bisect f) (a,b)
-  in signum (f a) /= signum (f b) ==> signum (f a') /= signum (f b')
+  in signum (f a) /= signum (f b) ==> signum (f a') =/= signum (f b')
 
-prop_bisectHalves :: Fun Rational Rational -> Property
-prop_bisectHalves (Fun _ f) = forAll rationalInterval $ \(a,b) ->
-                              let (a',b') = execState (bisect f) (a,b)
-                              in 2*abs (b' - a') === abs (b - a)
+prop_bisectHalves :: Fun Rational Rational -> Rational -> Rational -> Property
+prop_bisectHalves (Fun _ f) a b = let (a',b') = execState (bisect f) (a,b)
+                                  in 2*abs (b' - a') === abs (b - a)
 
-prop_bisectConverges :: Positive Int -> Property
-prop_bisectConverges (Positive n) = 
-    forAll rationalInterval $ \(a,b) ->
+prop_bisectConverges :: Positive Int -> Interval Rational -> Rational ->
+                        Property
+prop_bisectConverges (Positive n) (Interval (a,b)) m = 
     forAll (chooseRational (a,b)) $ \p ->
-    forAll nonZeroRational $ \m ->
     let f x = m*(x - p) -- polynomial with root p
         p'  = last $ evalState (replicateM n (bisect f)) (a,b)
     in abs (p - p') <= (b - a) / 2^n
@@ -46,14 +44,12 @@ test_bisect = case solve stop n (bisect f) s0 of
         f x       = x**3 + 4*x**2 - 10
         s0        = (1,2)
 
-prop_fixedPointConverges :: (Positive Int) -> Property
-prop_fixedPointConverges (Positive n) =
-  forAll rationalInterval $ \(a,b) ->
+prop_fixedPointConverges :: (Positive Int) -> Interval Rational -> Property
+prop_fixedPointConverges (Positive n) (Interval (a,b)) =
   forAll (chooseRational (a,b)) $ \p ->
   forAll (chooseRational (a,b)) $ \p0 ->
   forAll (chooseExclusiveRational (0,1)) $ \k ->
-  forAll (oneof [chooseExclusiveRational (0,k),
-                 chooseExclusiveRational (-k,0)]) $ \m ->
+  forAll (chooseRational (-k,k)) $ \m ->
   let f x = m*x + (1 - m)*p -- polynomial with fixed point p
       pn  = last $ evalState (replicateM n (fixedPoint f)) p0
   in abs (p - pn) <= k^^n*(max (p0 - a) (b - p0))
