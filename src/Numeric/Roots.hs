@@ -1,4 +1,11 @@
-module Numeric.Roots (bisect,fixedPoint,secant,solve) where
+module Numeric.Roots (
+  bisect,
+  falsePosition,
+  fixedPoint,
+  newton,
+  secant,
+  solve,
+  ) where
 
 import Control.Monad.State
 
@@ -32,3 +39,15 @@ secant f = do (p,p') <- get
               put (p',p'')
               return p''
 
+newton :: Fractional a => (a -> a) -> (a -> a) -> State a a
+newton f  f' = fixedPoint $ \p -> p - (f p)/(f' p)
+
+falsePosition :: (Eq a, Fractional a) => (a -> a) -> State (a,a) a
+falsePosition f = do (p,p') <- get
+                     let fp   = f p
+                         fp'  = f p'
+                         p''  = (p*fp' - p'*fp)/(fp' - fp)
+                     if signum (f p'') == signum (f p')
+                     then put (p,p'')
+                     else put (p',p'')
+                     return p''

@@ -2,14 +2,17 @@ module Numeric.Roots.Tests (
   prop_bisectContainsRoot,
   prop_bisectConverges,
   prop_bisectHalves,
+  prop_falsePositionContainsRoot,
   prop_fixedPointConverges,
   test_bisect,
+  test_falsePosition,
   test_fixedPoint,
   test_fixedPointDiverge,
   test_secant,
+  test_newton,
   ) where
 
-import Numeric.Roots (bisect,fixedPoint,secant,solve)
+import Numeric.Roots (bisect,falsePosition,fixedPoint,newton,secant,solve)
 import Test.HUnit (Assertion,(@?),assert,assertFailure)
 import Test.QuickCheck
 import Test.QuickCheck.Rational
@@ -85,3 +88,32 @@ test_secant = case solve stop n (secant f) s0 of
         n         = 5
         f x       = cos x - x
         s0        = (0.5, pi/4)
+
+test_newton :: Assertion
+test_newton = case solve stop n (newton f f') s0 of
+                   Nothing -> assertFailure "Failed to converge"
+                   Just x  -> abs (x - x') < t @? "Result not near root"
+  where x'        = 0.7390851332::Double
+        stop p p' = abs (p - p') < t
+        t         = 10e-3
+        n         = 4
+        f x       = cos x - x
+        f' x      = -sin x - 1
+        s0        = pi/4
+
+prop_falsePositionContainsRoot :: Fun Rational Rational ->
+                                  (Rational,Rational) -> Property
+prop_falsePositionContainsRoot (Fun _ f) (p0,p1) =
+  let (p0',p1') = execState (falsePosition f) (p0,p1)
+  in signum (f p0) /= signum (f p1) ==> signum (f p0') =/= signum (f p1')
+
+test_falsePosition :: Assertion
+test_falsePosition = case solve stop n (falsePosition f) s0 of
+                     Nothing -> assertFailure "Failed to converge"
+                     Just x  -> abs (x - x') < t @? "Result not near root"
+   where x'        = 0.7390851332::Double
+         stop p p' = abs (p - p') < t
+         t         = 10e-3
+         n         = 6
+         f x       = cos x - x
+         s0        = (0.5, pi/4)

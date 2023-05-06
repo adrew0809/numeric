@@ -10,7 +10,8 @@ tests :: TestTree
 tests = testGroup "Tests" [properties, unitTests]
 
 properties :: TestTree
-properties = testGroup "Properties" [bisectProps, fixedPointProps]
+properties = testGroup "Properties" 
+  [ bisectProps, fixedPointProps, falsePositionProps]
 
 bisectProps :: TestTree
 bisectProps = testGroup "Bisection" 
@@ -30,8 +31,16 @@ fixedPointProps = testGroup "Fixed Point"
                  prop_fixedPointConverges
   ]
 
+falsePositionProps :: TestTree
+falsePositionProps = testGroup "False Position" 
+  [ testProperty "f(p_i)f(p_i-1) < 0 implies f(a_i+1)f(b_i) < 0"
+                 prop_falsePositionContainsRoot
+  ]
+
 unitTests :: TestTree
-unitTests = testGroup "Unit Tests" [bisectTests, fixedPointTests, secantTests]
+unitTests = testGroup "Unit Tests"
+  [ bisectTests, fixedPointTests, secantTests, newtonTests, falsePositionTests
+  ]
 
 bisectTests :: TestTree
 bisectTests = testGroup "Bisection"
@@ -54,4 +63,17 @@ secantTests :: TestTree
 secantTests = testGroup "Secant"
   [ testCase "x = cos x, p0 = 0.5, p1 = pi/4, n=5, converges to p within 10e-3"
              test_secant
+  ]
+
+newtonTests :: TestTree
+newtonTests = testGroup "Newton"
+  [ testCase "f(x) = cos x - x, f'(x) = -sinx -1, p0 = pi/4, n=4, converges to\
+             \ p within 10e-3"
+             test_newton
+  ]
+
+falsePositionTests :: TestTree
+falsePositionTests = testGroup "False Position"
+  [ testCase "x = cos x, p0 = 0.5, p1 = pi/4, n=6, converges to p within 10e-3"
+             test_falsePosition
   ]
