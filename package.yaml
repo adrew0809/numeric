@@ -61,8 +61,8 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - numeric
+    - tasty
+    - tasty-hunit
+    - tasty-quickcheck
     - HUnit
     - QuickCheck
-    - test-framework
-    - test-framework-hunit
-    - test-framework-quickcheck2
